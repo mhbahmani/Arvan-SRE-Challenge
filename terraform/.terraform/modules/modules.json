@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"multipass_vm","Source":"./multipass_module","Dir":"multipass_module"},{"Key":"multipass_vm_master","Source":"./multipass_module_master","Dir":"multipass_module_master"},{"Key":"multipass_vm_worker","Source":"./multipass_module_worker","Dir":"multipass_module_worker"}]}
