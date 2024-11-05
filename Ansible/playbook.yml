@@ -1,0 +1,12 @@
+---
+- name: Deploy k3s on master
+  hosts: master
+  become: true
+  roles:
+    - k3s-master
+
+- name: Deploy k3s on workers
+  hosts: workers
+  become: true
+  roles:
+    - k3s-worker
