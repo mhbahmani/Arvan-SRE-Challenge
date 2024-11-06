@@ -1,0 +1,34 @@
+---
+- name: Create the namespace if it doesn't exist
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ ip_location_namespace }}"
+  ignore_errors: yes
+
+- name: Deploy the ip-location Deployment
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ip_location_namespace }}"
+    definition: "{{ lookup('template', 'deployment.yml.j2') }}"
+
+- name: Deploy the ip-location Service
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ip_location_namespace }}"
+    definition: "{{ lookup('template', 'service.yml.j2') }}"
+
+- name: Deploy the ip-location Ingress
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ip_location_namespace }}"
+    definition: "{{ lookup('template', 'ingress.yml.j2') }}"
+

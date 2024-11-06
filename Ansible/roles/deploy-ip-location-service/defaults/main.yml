@@ -1,0 +1,11 @@
+---
+ip_location_namespace: zeus
+ip_location_replicas: 1
+ip_location_image: "mhbahmani/ip-location:v1.8"
+ip_location_hostname: "ip-location.arvan.mhbhm.ir"
+
+postgres_host: "postgres-db-node2-service.postgres.svc.cluster.local"
+postgres_port: "5432"
+postgres_user: "postgres"
+postgres_password: "password"
+postgres_db: "ip_location"

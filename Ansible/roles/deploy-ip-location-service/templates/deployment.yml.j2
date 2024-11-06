@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip-location
+  namespace: {{ ip_location_namespace }}
+spec:
+  replicas: {{ ip_location_replicas }}
+  selector:
+    matchLabels:
+      app: ip-location
+  template:
+    metadata:
+      labels:
+        app: ip-location
+    spec:
+      initContainers:
+        - name: db-init
+          image: postgres:15
+          env:
+            - name: POSTGRES_HOST
+              value: "{{ postgres_host }}"
+            - name: POSTGRES_PORT
+              value: "{{ postgres_port }}"
+            - name: POSTGRES_USER
+              value: "{{ postgres_user }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ postgres_password }}"
+            - name: POSTGRES_DB
+              value: "{{ postgres_db }}"
+          command: ["sh", "-c"]
+          args:
+            - |
+              psql "host=$POSTGRES_HOST port=$POSTGRES_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=$POSTGRES_DB sslmode=disable" -c \
+              "CREATE TABLE IF NOT EXISTS ip_locations (ip VARCHAR(45) PRIMARY KEY, country VARCHAR(100));"
+      containers:
+        - name: webhook
+          imagePullPolicy: IfNotPresent
+          image: "{{ ip_location_image }}"
+          ports:
+            - containerPort: 8080
+            - containerPort: 9999
+              name: http-metrics
+          env:
+            - name: POSTGRES_HOST
+              value: "{{ postgres_host }}"
+            - name: POSTGRES_PORT
+              value: "{{ postgres_port }}"
+            - name: POSTGRES_USER
+              value: "{{ postgres_user }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ postgres_password }}"
+            - name: POSTGRES_DB
+              value: "{{ postgres_db }}"
