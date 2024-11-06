@@ -1,0 +1,116 @@
+---
+- name: Create Alertmanager namespace
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: monitoring
+  ignore_errors: yes  # Skip if namespace already exists
+
+- name: Create Alertmanager ConfigMap
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: alertmanager-config
+        namespace: monitoring
+      data:
+        config.yml: |
+          route:
+            group_by: ['alertname']
+            receiver: 'default'
+          receivers:
+            - name: 'default'
+
+- name: Deploy Alertmanager
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: alertmanager
+        namespace: monitoring
+      spec:
+        selector:
+          matchLabels:
+            app: alertmanager
+        template:
+          metadata:
+            labels:
+              app: alertmanager
+          spec:
+            containers:
+            - args:
+              - --config.file=/etc/alertmanager/config.yml
+              - --storage.path=/alertmanager
+              image: prom/alertmanager
+              imagePullPolicy: IfNotPresent
+              name: alertmanager
+              ports:
+              - containerPort: 9093
+                name: alertmanager
+                protocol: TCP
+              volumeMounts:
+              - mountPath: /etc/alertmanager
+                name: config-volume
+              - mountPath: /alertmanager
+                name: alertmanager
+            volumes:
+            - configMap:
+                defaultMode: 420
+                name: alertmanager-config
+              name: config-volume
+            - emptyDir: {}
+              name: alertmanager
+
+- name: Create Alertmanager Service
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: alertmanager
+        namespace: monitoring
+      spec:
+        selector:
+          app: alertmanager
+        ports:
+        - protocol: TCP
+          port: 9093
+          targetPort: 9093
+
+- name: Create Alertmanager Ingress
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: alertmanager-ingress
+        namespace: monitoring
+      spec:
+        rules:
+        - host: alertmanager.example.com
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: alertmanager
+                  port:
+                    number: 9093
+
