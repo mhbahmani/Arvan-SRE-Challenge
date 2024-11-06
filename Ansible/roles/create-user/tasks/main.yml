@@ -1,0 +1,117 @@
+---
+- name: Create ServiceAccount and Secret for deployer
+  shell: |
+    sudo kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: deployer
+      namespace: default
+    ---
+    apiVersion: v1
+    kind: Secret
+    type: kubernetes.io/service-account-token
+    metadata:
+      name: deployer
+      annotations:
+        kubernetes.io/service-account.name: "deployer"
+    EOF
+  args:
+    creates: /tmp/deployer-sa-created
+
+- name: Wait for deployer token to be generated
+  command: "kubectl get secret deployer -o jsonpath='{.data.token}'"
+  register: deployer_token_check
+  retries: 5
+  delay: 5
+  until: deployer_token_check.stdout != ""
+
+- name: Create ClusterRole for deployer
+  shell: |
+    sudo kubectl apply -f - <<EOF
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: deployer-role
+    rules:
+      - apiGroups: [""]
+        resources: ["*"]
+        verbs: ["create", "list", "patch", "get", "update", "delete"]
+      - apiGroups: ["rbac.authorization.k8s.io"]
+        resources: ["*"]
+        verbs: ["create", "list", "patch", "get", "update", "delete"]
+      - apiGroups: ["apps"]
+        resources: ["*"]
+        verbs: ["create", "list", "patch", "get", "update", "delete"]
+      - apiGroups: ["extensions"]
+        resources: ["*"]
+        verbs: ["create", "list", "patch", "get", "update", "delete"]
+      - apiGroups: ["networking.k8s.io"]
+        resources: ["*"]
+        verbs: ["create", "list", "patch", "get", "update", "delete"]
+      - apiGroups: [""]
+        resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["extensions"]
+        resources: ["ingresses"]
+        verbs: ["get", "list", "watch"]
+      - nonResourceURLs: ["/metrics"]
+        verbs: ["get"]
+    EOF
+  args:
+    creates: /tmp/deployer-role-created
+
+- name: Create ClusterRoleBinding for deployer
+  shell: |
+    sudo kubectl apply -f - <<EOF
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: deployer-role-binding
+    subjects:
+      - kind: ServiceAccount
+        name: deployer
+        namespace: default
+    roleRef:
+      kind: ClusterRole
+      name: deployer-role
+      apiGroup: rbac.authorization.k8s.io
+    EOF
+  args:
+    creates: /tmp/deployer-role-binding-created
+
+
+- name: Retrieve CA certificate data
+  command: "kubectl get secret -n kube-system k3s-serving -o jsonpath='{.tls.crt}'"
+  register: ca_cert_data
+  changed_when: false
+
+- name: Generate kubeconfig file for deployer
+  shell: |
+    KUBECONFIG_FILE=/tmp/deployer-kubeconfig
+    kubectl config set-cluster default-cluster \
+      --server=https://{{ ansible_host }}:6443 \
+      --certificate-authority-data={{ ca_cert_data.stdout }} \
+      --kubeconfig=$KUBECONFIG_FILE
+    kubectl config set-credentials deployer \
+      --token=$(kubectl get secret deployer -o jsonpath='{.data.token}' | base64 --decode) \
+      --kubeconfig=$KUBECONFIG_FILE
+    kubectl config set-context default-context \
+      --cluster=default-cluster \
+      --user=deployer \
+      --namespace=default \
+      --kubeconfig=$KUBECONFIG_FILE
+    kubectl config use-context default-context --kubeconfig=$KUBECONFIG_FILE
+  args:
+    creates: /tmp/deployer-kubeconfig
+
+- name: Securely copy kubeconfig to control machine
+  fetch:
+    src: /tmp/deployer-kubeconfig
+    dest: ~/deployer-kubeconfig
+    flat: yes
+
+- name: Encrypt kubeconfig with Ansible Vault
+  ansible.builtin.command:
+    cmd: "ansible-vault encrypt ~/deployer-kubeconfig"
+  when: ansible_vault_password_file is defined
