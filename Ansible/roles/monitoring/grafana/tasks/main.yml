@@ -1,0 +1,108 @@
+---
+- name: Create Deployment for Grafana with persistent storage
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: grafana
+        namespace: monitoring
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: grafana
+        template:
+          metadata:
+            labels:
+              app: grafana
+          spec:
+            containers:
+              - name: grafana
+                image: docker.arvancloud.ir/grafana/grafana
+                imagePullPolicy: IfNotPresent
+                env:
+                  - name: GF_SECURITY_ADMIN_PASSWORD
+                    value: "admin"
+                ports:
+                  - containerPort: 3000
+                volumeMounts:
+                  - name: grafana-storage
+                    mountPath: /var/lib/grafana
+                  - name: grafana-plugins
+                    mountPath: /var/lib/grafana/plugins
+            volumes:
+              - name: grafana-storage
+                persistentVolumeClaim:
+                  claimName: grafana-pvc
+              - name: grafana-plugins
+                emptyDir: {}
+
+- name: Create PersistentVolumeClaim for Grafana
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: grafana-pvc
+        namespace: monitoring
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+
+- name: Expose Grafana services
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: grafana
+        namespace: monitoring
+      spec:
+        selector:
+          app: grafana
+        ports:
+          - port: 3000
+            targetPort: 3000
+            protocol: TCP
+        type: ClusterIP
+
+- name: Create Ingress for Grafana
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: grafana-ingress
+        namespace: monitoring
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: /
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: grafana.arvan.mhbhm.ir
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: grafana
+                      port:
+                        number: 3000
