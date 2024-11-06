@@ -38,7 +38,7 @@ var (
 	)
 	responseTimeTotalMS = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "response_time_total_ms",
+			Name: "response_time_ms_total",
 			Help: "Total response time in milliseconds",
 		},
 	)
