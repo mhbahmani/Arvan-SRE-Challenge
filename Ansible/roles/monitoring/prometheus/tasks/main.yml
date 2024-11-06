@@ -9,6 +9,7 @@
 - name: Create Prometheus ConfigMap
   environment:
     K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  register: result
   kubernetes.core.k8s:
     state: present
     definition:
@@ -18,7 +19,14 @@
         name: prometheus-config
         namespace: monitoring
       data:
+        alert_rules.yml: "{{ lookup('file', './files/prometheus-alert-rules.yml') }}"
         prometheus.yml: |
+          alerting:
+            alertmanagers:
+            - static_configs:
+              - targets: ["alertmanager.monitoring.svc.cluster.local:9093"]
+          rule_files:
+            - "alert_rules.yml"
           global:
             scrape_interval: 23s
             scrape_timeout: 20s
@@ -184,6 +192,7 @@
                 args:
                   - "--config.file=/etc/prometheus/prometheus.yml"
                   - "--storage.tsdb.path=/prometheus/data"
+                  - "--web.enable-lifecycle"
                 ports:
                   - containerPort: 9090
                 volumeMounts:
@@ -263,3 +272,9 @@
                       name: prometheus
                       port:
                         number: 9090
+
+- name: Trigger Prometheus reload if configuration or alert rules change
+  ansible.builtin.command: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig exec -n monitoring prometheus-0 -- killall -HUP prometheus
+  when: result.changed
+  ignore_errors: true  # To handle cases where the pod might not be running

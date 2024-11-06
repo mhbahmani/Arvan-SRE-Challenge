@@ -1,0 +1,77 @@
+groups:
+- name: pod_condition
+  rules:
+  - alert: PodTermination
+    expr: count by (namespace) (kube_pod_container_status_terminated_reason{reason!="Completed"} > 0) > 30
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $value }} Pods in namespace {{ $labels.namespace }} are in terminating condtion!"
+  - alert: DeploymentTermination
+    expr: count by (reason, container, namespace) (kube_pod_container_status_terminated_reason{reason!="Completed", container!="arthur"} > 0) > 5
+    for: 2m
+    labels:
+      severity: critical
+      instance: "{{ $labels.container }}"
+    annotations:
+      summary: "{{ $value }} Pods of {{ $labels.container }} in namespace {{ $labels.namespace }} are terminating because of {{ $labels.reason }}!"
+  - alert: PodOutOfMemory
+    expr: count by(reason, container, namespace,deployment) (label_replace(kube_pod_container_status_terminated_reason{container!="arthur", reason="OOMKilled"} > 0, "deployment","$1","pod", "(.+)-[a-z A-Z 0-9]*-[a-z A-Z 0-9]*" )) 
+    labels:
+      severity: critical
+      instance: "{{ $labels.container }}"
+    annotations:
+      summary: "{{ $value }} Pods of {{ $labels.container }} of {{ $labels.deployment }} in namespace {{ $labels.namespace }} OOMKILLED!"
+  - alert: DeploymentUnavailable
+    expr: kube_deployment_status_replicas_unavailable > 5
+    for: 20m
+    labels:
+      severity: critical
+      instance: "{{ $labels.deployment }}"
+    annotations:
+      summary: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has {{ $value }} unavailable pods."
+  - alert: DeploymentUnavailablePercent
+    expr: kube_deployment_status_replicas_unavailable / kube_deployment_status_replicas * 100 > 15
+    for: 10m
+    labels:
+      severity: critical
+      instance: "{{ $labels.deployment }}"
+      kind: deployment
+      odin_annotate: true
+    annotations:
+      summary: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has {{ $value }} percent unavailable pods."
+  - alert: DeploymentUpdateError
+    expr: kube_deployment_status_replicas_updated / kube_deployment_status_replicas < 0.25
+    for: 3m
+    labels:
+      severity: critical
+      instance: "{{ $labels.deployment }}"
+    annotations:
+      summary: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has {{ $value }} percent updated pods."
+  - alert: PodFailure
+    expr: count by (container, reason, namespace,deployment)(label_replace(kube_pod_container_status_waiting_reason{reason=~"CrashLoopBackOff|ErrImagePull|ImagePullBackOff|Init:CrashLoopBackOff"} > 0, "deployment","$1","pod", "(.+)-[a-z A-Z 0-9]*-[a-z A-Z 0-9]*" )) 
+    for: 30s
+    labels:
+      severity: critical
+      instance: "{{ $labels.container }}"
+      kind: deployment
+    annotations:
+      summary: "{{ $value }} Pod(s) of Container:{{ $labels.container }}, Pod:{{ $labels.deployment }} in namespace:{{ $labels.namespace }} are in {{ $labels.reason }} state."
+  - alert: PodFailureWarning
+    expr: count by (container, reason, namespace,deployment)(label_replace(kube_pod_container_status_waiting_reason{reason=~"CrashLoopBackOff|ErrImagePull|ImagePullBackOff|Init:CrashLoopBackOff"} > 0, "deployment","$1","pod", "(.+)-[a-z A-Z 0-9]*-[a-z A-Z 0-9]*" )) 
+    for: 1m
+    labels:
+      severity: warning
+      instance: "{{ $labels.container }}"
+      kind: deployment
+    annotations:
+      summary: "{{ $value }} Pod(s) of Container:{{ $labels.container }}, Pod:{{ $labels.deployment }} in namespace:{{ $labels.namespace }}  are in {{ $labels.reason }} state."
+  - alert: PodPending
+    expr: count by (container, reason, namespace) (kube_pod_container_status_waiting_reason{reason=~"Pending"} > 0)
+    for: 3m
+    labels:
+      severity: critical
+      instance: "{{ $labels.container }}"
+      kind: deployment
+    annotations:
+      summary: "{{ $value }} Pod(s) of {{ $labels.container }} in namespace {{ $labels.namespace }} are in {{ $labels.reason }} state."
