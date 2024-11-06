@@ -1,0 +1,6 @@
+---
+- name: Copy kubeconfig file to worker nodes
+  copy:
+    src: ~/deployer-kubeconfig
+    dest: /tmp/deployer-kubeconfig
+    mode: '0644'
