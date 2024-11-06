@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY go.mod go.sum ./
 
-RUN go mod download
+RUN export https_proxy=http://18.132.10.179:3130; go mod download
 
 COPY . .
 

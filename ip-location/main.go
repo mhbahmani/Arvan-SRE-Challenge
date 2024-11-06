@@ -7,7 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "github.com/lib/pq"
 )
 
@@ -25,20 +28,38 @@ type IPInfo struct {
 	Country string `json:"country"`
 }
 
-func connectDB() (*sql.DB, error) {
-	dbHost := os.Getenv("POSTGRES_HOST")
-	dbPort := os.Getenv("POSTGRES_PORT")
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPassword := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("POSTGRES_DB")
+var (
+	countryIPsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "country_ips_total",
+			Help: "Total number of IPs for each country",
+		},
+		[]string{"country"},
+	)
+	responseTimeTotalMS = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "response_time_total_ms",
+			Help: "Total response time in milliseconds",
+		},
+	)
+	requestsTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "requests_total",
+			Help: "Total number of requests",
+		},
+	)
+)
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
-
-	return sql.Open("postgres", dsn)
+func init() {
+	prometheus.MustRegister(countryIPsTotal)
+	prometheus.MustRegister(responseTimeTotalMS)
+	prometheus.MustRegister(requestsTotal)
 }
 
 func countryHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+	requestsTotal.Inc()
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
@@ -61,6 +82,11 @@ func countryHandler(w http.ResponseWriter, r *http.Request) {
 		RequestedIP:        ipRequest.IP,
 		FetchedFromDatabase: fromDB,
 	}
+
+	// Record metrics
+	countryIPsTotal.WithLabelValues(country).Inc()
+	responseTimeMS := time.Since(startTime).Milliseconds()
+	responseTimeTotalMS.Add(float64(responseTimeMS))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -99,7 +125,6 @@ func getCountry(ip string) (string, bool, error) {
 
 func fetchCountryFromAPI(ip string) (string, error) {
 	url := fmt.Sprintf("http://ip-api.com/json/%s", ip)
-	// TODO: Add alternative
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to get IP info: %v", err)
@@ -118,12 +143,38 @@ func fetchCountryFromAPI(ip string) (string, error) {
 	return info.Country, nil
 }
 
+func connectDB() (*sql.DB, error) {
+	dbHost := os.Getenv("POSTGRES_HOST")
+	dbPort := os.Getenv("POSTGRES_PORT")
+	dbUser := os.Getenv("POSTGRES_USER")
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+	dbName := os.Getenv("POSTGRES_DB")
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
+
+	return sql.Open("postgres", dsn)
+}
+
 func main() {
 	http.HandleFunc("/get-country", countryHandler)
+	go func() {
+		port := "8080"
+		fmt.Printf("Server is running on port %s...\n", port)
+		if err := http.ListenAndServe(":"+port, nil); err != nil {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
 
-	port := "8080"
-	fmt.Printf("Server is running on port %s...\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
-	}
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+	go func() {
+		metricsPort := "9999"
+		fmt.Printf("Metrics are available on port %s...\n", metricsPort)
+		if err := http.ListenAndServe(":"+metricsPort, metricsMux); err != nil {
+			log.Fatalf("Metrics server failed to start: %v", err)
+		}
+	}()
+
+	select {}
 }
