@@ -1,0 +1,5 @@
+---
+- name: Remove deployer kubeconfig file
+  file:
+    path: /tmp/deployer-kubeconfig
+    state: absent
