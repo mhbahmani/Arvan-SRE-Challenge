@@ -6,7 +6,7 @@
     executable: /bin/bash
   environment:
     INSTALL_K3S_EXEC: "server --cluster-init --etcd-expose-metrics=true --node-external-ip {{ ansible_ssh_host }}"
-  
+
 - name: Get the node token
   command: cat /var/lib/rancher/k3s/server/node-token
   register: node_token
@@ -15,4 +15,3 @@
 - name: Save node token for workers
   set_fact:
     k3s_token: "{{ node_token.stdout }}"
-
