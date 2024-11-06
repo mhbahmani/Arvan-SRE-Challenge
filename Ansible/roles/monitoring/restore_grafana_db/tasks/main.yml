@@ -1,0 +1,17 @@
+---
+- name: Copy grafana db to node
+  copy:
+    src: ./files/grafana.db
+    dest: /tmp/grafana.db
+
+- name: Get grafana pod name
+  register: grafana_pod_name
+  shell: "kubectl --kubeconfig /tmp/deployer-kubeconfig -n monitoring get po -o custom-columns=NAME:.metadata.name -lapp=grafana | grep grafana"
+
+- name: Restore grafana db
+  register: result
+  shell: "kubectl --kubeconfig /tmp/deployer-kubeconfig -n monitoring cp /tmp/grafana.db {{ grafana_pod_name.stdout }}:/var/lib/grafana/"
+
+- name: Restart grafana
+  when: result.changed
+  shell: "kubectl --kubeconfig /tmp/deployer-kubeconfig -n monitoring delete po {{ grafana_pod_name.stdout }}"
