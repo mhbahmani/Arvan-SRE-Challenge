@@ -87,10 +87,12 @@ func getCountry(ip string) (string, bool, error) {
 		return "", false, err
 	}
 
-	_, err = db.Exec("INSERT INTO ip_locations (ip, country) VALUES ($1, $2)", ip, country)
-	if err != nil {
-		return "", false, err
-	}
+	go func() {
+		_, err := db.Exec("INSERT INTO ip_locations (ip, country) VALUES ($1, $2)", ip, country)
+		if err != nil {
+			log.Printf("failed to insert into db: %v", err)
+		}
+	}()
 
 	return country, false, nil
 }
