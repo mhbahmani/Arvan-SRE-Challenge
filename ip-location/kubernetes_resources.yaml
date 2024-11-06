@@ -1,0 +1,112 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip-location
+  namespace: zeus
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: ip-location
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ip-location
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_HOST
+          value: postgres-db-node2-service.postgres.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: *****
+        - name: POSTGRES_DB
+          value: ip_location
+        image: docker.arvancloud.ir/mhbahmani/ip-location:v1.1
+        imagePullPolicy: Always
+        name: webhook
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - args:
+        - |
+          psql "host=$POSTGRES_HOST port=$POSTGRES_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=$POSTGRES_DB sslmode=disable" -c \
+          "CREATE TABLE IF NOT EXISTS ip_locations (ip VARCHAR(45) PRIMARY KEY, country VARCHAR(100));"
+        command:
+        - sh
+        - -c
+        env:
+        - name: POSTGRES_HOST
+          value: postgres-db-node2-service.postgres.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: *****
+        - name: POSTGRES_DB
+          value: ip_location
+        image: postgres:15
+        imagePullPolicy: IfNotPresent
+        name: db-init
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ip-location
+  namespace: zeus
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: ip-location
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ip-location
+  namespace: zeus
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: ip-location.arvan.mhbhm.ir
+    http:
+      paths:
+      - backend:
+          service:
+            name: ip-location
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
