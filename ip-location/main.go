@@ -83,7 +83,6 @@ func countryHandler(w http.ResponseWriter, r *http.Request) {
 		FetchedFromDatabase: fromDB,
 	}
 
-	// Record metrics
 	countryIPsTotal.WithLabelValues(country).Inc()
 	responseTimeMS := time.Since(startTime).Milliseconds()
 	responseTimeTotalMS.Add(float64(responseTimeMS))
@@ -102,23 +101,24 @@ func getCountry(ip string) (string, bool, error) {
 	var country string
 	err = db.QueryRow("SELECT country FROM ip_locations WHERE ip = $1", ip).Scan(&country)
 	if err == nil {
+		log.Printf("IP location %s found in database: %s", ip, country)
 		return country, true, nil
 	}
 	if err != sql.ErrNoRows {
 		return "", false, err
 	}
-
+	log.Printf("Nothing found for %s in database", ip)
+	
 	country, err = fetchCountryFromAPI(ip)
 	if err != nil {
 		return "", false, err
 	}
 
-	go func() {
-		_, err := db.Exec("INSERT INTO ip_locations (ip, country) VALUES ($1, $2)", ip, country)
-		if err != nil {
-			log.Printf("failed to insert into db: %v", err)
-		}
-	}()
+	log.Printf("Inserting IP %s into database...", ip)
+	_, err = db.Exec("INSERT INTO ip_locations (ip, country) VALUES ($1, $2)", ip, country)
+	if err != nil {
+		log.Printf("failed to insert into db: %v", err)
+	}
 
 	return country, false, nil
 }
