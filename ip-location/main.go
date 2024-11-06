@@ -48,12 +48,19 @@ var (
 			Help: "Total number of requests",
 		},
 	)
+	responsesFromCache = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "responses_from_cache",
+			Help: "Total number of requests that responded with cache",
+		},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(countryIPsTotal)
 	prometheus.MustRegister(responseTimeTotalMS)
 	prometheus.MustRegister(requestsTotal)
+	prometheus.MustRegister(responsesFromCache)
 }
 
 func countryHandler(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +108,7 @@ func getCountry(ip string) (string, bool, error) {
 	var country string
 	err = db.QueryRow("SELECT country FROM ip_locations WHERE ip = $1", ip).Scan(&country)
 	if err == nil {
+		responsesFromCache.Inc()
 		log.Printf("IP location %s found in database: %s", ip, country)
 		return country, true, nil
 	}
