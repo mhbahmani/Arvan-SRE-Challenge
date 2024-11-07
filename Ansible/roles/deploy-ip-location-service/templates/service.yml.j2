@@ -7,5 +7,9 @@ spec:
   ports:
     - port: 80
       targetPort: 8080
+      name: application
+    - port: 9999
+      targetPort: 9999
+      name: http-metrics
   selector:
     app: ip-location

@@ -17,3 +17,10 @@ spec:
                 name: ip-location
                 port:
                   number: 80
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: ip-location
+                port:
+                  number: 9999
