@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "*" ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -12,4 +12,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: cd ip-location; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
+      run: cd ip-location;docker login -u ${{ secrets.DOCKERHUB_USER }} -p ${{ secrets.DOCKERHUB_PASS }}; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
