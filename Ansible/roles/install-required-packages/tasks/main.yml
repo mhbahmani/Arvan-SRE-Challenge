@@ -1,0 +1,10 @@
+---
+- name: Install pip3
+  apt:
+    name: python3-pip
+    state: present
+
+- name: Install pre-requisites
+  pip:
+    name:
+      - kubernetes
