@@ -2,8 +2,8 @@ name: Build
 
 on:
   push:
-    # branches: [ "master" ]
     branches: [ "*" ]
+    # branches: [ "master" ]
   pull_request:
     branches: [ "*" ]
     # branches: [ "master" ]
@@ -11,10 +11,17 @@ on:
 env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
   DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+  IMAGE: mhbahmani/ip-location:$(date +%s)
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: echo $DOCKERHUB_PASS; cd ip-location;docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
+    - name: change directory
+      run: cd ip-location;
+    - name: login
+      run: docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS;
+    - name: build the image
+      run: docker build . --file Dockerfile --tag $IMAGE;
+    - name: push the image to docker hub
+      run: docker push $IMAGE; 
