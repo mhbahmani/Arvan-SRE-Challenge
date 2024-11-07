@@ -27,11 +27,13 @@ spec:
               value: "{{ postgres_password }}"
             - name: POSTGRES_DB
               value: "{{ postgres_db }}"
+            - name: POSTGRES_TABLE
+              value: "{{ postgres_table }}"
           command: ["sh", "-c"]
           args:
             - |
-              psql "host=$POSTGRES_HOST port=$POSTGRES_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=$POSTGRES_DB sslmode=disable" -c \
-              "CREATE TABLE IF NOT EXISTS ip_locations (ip VARCHAR(45) PRIMARY KEY, country VARCHAR(100));"
+              psql "host=$POSTGRES_HOST port=$POSTGRES_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=postgres sslmode=disable" -c \
+              "CREATE TABLE IF NOT EXISTS ${POSTGRES_TABLE} (ip VARCHAR(45) PRIMARY KEY, country VARCHAR(100));"
       containers:
         - name: webhook
           imagePullPolicy: IfNotPresent
