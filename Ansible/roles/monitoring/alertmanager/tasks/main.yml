@@ -6,7 +6,7 @@
     api_version: v1
     kind: Namespace
     name: monitoring
-  ignore_errors: yes  # Skip if namespace already exists
+  ignore_errors: yes
 
 - name: Create Alertmanager ConfigMap
   environment:
@@ -51,7 +51,7 @@
             - args:
               - --config.file=/etc/alertmanager/config.yml
               - --storage.path=/alertmanager
-              image: prom/alertmanager
+              image: docker.arvancloud.ir/prom/alertmanager
               imagePullPolicy: IfNotPresent
               name: alertmanager
               ports:

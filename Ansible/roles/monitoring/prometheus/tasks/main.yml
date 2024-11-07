@@ -56,7 +56,7 @@
               follow_redirects: true
               static_configs:
               - targets:
-                - '10.232.161.51:2381'
+                - 'arvan-challenge-k8s-master-1:2381'
                 labels:
                   hostname: Master-01
         
@@ -82,9 +82,9 @@
             - job_name: 'node-exporters'
               static_configs:
                 - targets:
-                  - '10.232.161.51:9100'
-                  - '10.232.161.101:9100'
-                  - '10.232.161.111:9100'
+                  - 'arvan-challenge-k8s-master-1:9100'
+                  - 'arvan-challenge-k8s-worker-1:9100'
+                  - 'arvan-challenge-k8s-worker-2:9100'
 
             - job_name: 'applications-metrics'
               scrape_interval: 120s
@@ -268,6 +268,6 @@
 
 - name: Trigger Prometheus reload if configuration or alert rules change
   ansible.builtin.command: |
-    kubectl --kubeconfig /tmp/deployer-kubeconfig exec -n monitoring prometheus-0 -- killall -HUP prometheus
+    kubectl --kubeconfig /tmp/deployer-kubeconfig exec -it -n monitoring prometheus-0 -- killall -HUP prometheus
   when: result.changed
-  ignore_errors: true  # To handle cases where the pod might not be running
+  ignore_errors: true
