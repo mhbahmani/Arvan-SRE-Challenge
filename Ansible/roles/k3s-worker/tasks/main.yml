@@ -1,7 +1,7 @@
 ---
 - name: Install k3s on worker
   shell: |
-    curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['master-node'].ansible_host }}:6443 K3S_TOKEN={{ hostvars['master-node'].k3s_token }} sh -
+    curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['master-node-1'].ansible_host }}:6443 K3S_TOKEN={{ hostvars['master-node-1'].k3s_token }} sh -
   args:
     executable: /bin/bash
   environment:

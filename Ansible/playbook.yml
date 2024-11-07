@@ -1,6 +1,6 @@
 ---
-- name: Deploy k3s on master
-  hosts: master
+- name: Deploy k3s on masters
+  hosts: masters
   become: true
   roles:
     - k3s-master
@@ -49,7 +49,7 @@
     - deploy-ip-location-service
 
 - name: Cleanup nodes
-  hosts: master
+  hosts: masters
   become: true
   roles:
     - cleanup
