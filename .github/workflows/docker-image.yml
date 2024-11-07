@@ -2,11 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ "*" ]
-    # branches: [ "master" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "*" ]
-    # branches: [ "master" ]
+    branches: [ "master" ]
 
 env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
