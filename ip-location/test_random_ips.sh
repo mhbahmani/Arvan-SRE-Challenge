@@ -148,7 +148,7 @@ while true; do
 	sleep 1
 
 	counter=$(( counter + 1 ))
-	if test $counter -gt $(( RANDOM % 15)); then
+	if test $counter -gt $(( RANDOM % 10)); then
 		counter=0
 		ip=${ips[`echo $(( RANDOM % 137 ))`]}
 		curl ip-location.arvan.mhbhm.ir/get-country -H 'content-type: application/json' -d "{\"ip\": \"$ip\"}" 
