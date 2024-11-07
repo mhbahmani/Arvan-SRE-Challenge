@@ -44,8 +44,11 @@ ansible-playbook -i hosts.ini playbook.yml
 This setup includes Prometheus, Grafana, and Alertmanager on the Kubernetes cluster. Grafana is configured with three dashboards:
 
 * Node Exporter Dashboard
-* IP Location Service Dashboard (for monitoring the custom IP location service)
+* IP Location Service Dashboard (for monitoring the IP location service)
+![ip-location-panel1](./static/IP-Location-Monitoring-1.png)
+![ip-location-panel2](./static/IP-Location-Monitoring-2.png)
 * ETCD Dashboard
+![etcd-panel](./static/ETCD-Monitoring.png)
 
 **Configure Prometheus**
 Prometheus is configured to scrape metrics from:
@@ -111,6 +114,11 @@ response_time_ms_total 68806
 # HELP responses_from_cache Total number of requests that responded with cache
 # TYPE responses_from_cache counter
 responses_from_cache 21
+```
+
+You can see the full metrics on [prometheus](prometheus.arvan.mhbhm.ir) or using this curl:
+```bash
+curl ip-location.arvan.mhbhm.ir/metrics
 ```
 
 ## Notes
