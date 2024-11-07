@@ -1,3 +1,4 @@
+[![Build](https://github.com/mhbahmani/Arvan-SRE-Challenge/actions/workflows/docker-image.yml/badge.svg?branch=master)](https://github.com/mhbahmani/Arvan-SRE-Challenge/actions/workflows/docker-image.yml)
 # SRE DevOps Challenge Solution
 
 This repository contains code and configuration for the SRE DevOps interview challenge, covering the setup and deployment of a k3s cluster, monitoring and alerting system, PostgreSQL cluster, and IP location service with caching and metrics. The project is designed for a local setup using Multipass as the VM hypervisor, Terraform for VM provisioning, and Ansible for automating the deployment.
