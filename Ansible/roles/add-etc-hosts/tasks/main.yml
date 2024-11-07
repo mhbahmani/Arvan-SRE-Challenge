@@ -1,0 +1,8 @@
+---
+- name: Add host entries
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item].inventory_hostname }} {{ hostvars[item].ansible_host }}"
+    create: yes
+    state: present
+  loop: "{{ groups['all'] }}"
