@@ -1,11 +1,4 @@
 ---
-- name: install pre-requisites
-  pip:
-    name:
-      - openshift
-      - pyyaml
-      - kubernetes 
-
 - name: Create Prometheus ConfigMap
   environment:
     K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
