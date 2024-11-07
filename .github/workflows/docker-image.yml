@@ -16,9 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: change directory
-      working-directory: ip-locations
     - name: Build and push the image
+      working-directory: ip-locations
       run: |
         docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
         IMAGE=mhbahmani/ip-location:$(date +%s)
