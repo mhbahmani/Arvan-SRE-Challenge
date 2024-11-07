@@ -1,56 +1,56 @@
 ---
-# - name: Deploy k3s on master
-#   hosts: master
-#   become: true
-#   roles:
-#     - k3s-master
+- name: Deploy k3s on master
+  hosts: master
+  become: true
+  roles:
+    - k3s-master
 
-# - name: Deploy k3s on workers
-#   hosts: workers
-#   become: true
-#   roles:
-#     - k3s-worker
+- name: Deploy k3s on workers
+  hosts: workers
+  become: true
+  roles:
+    - k3s-worker
 
-#- name: Create deployer service account and secret
-#  hosts: "{{ groups['masters'] | random }}"
-#  become: true
-#  roles:
-#    - create-user
-#
-#- name: Copy kube config to all master nodes
-#  hosts: masters
-#  become: true
-#  roles:
-#    - copy-kubeconfig
-#
-#- name: Install node exporter
-#  hosts: all
-#  become: true
-#  roles:
-#    - monitoring/node-exporter
-#
-#- name: Deploy monitoring on k3s cluster
-#  hosts: "{{ groups['masters'] | random }}"
-#  become: true
-#  roles:
-#    - monitoring/namespace
-#    - monitoring/grafana
-#    - monitoring/prometheus
-#    - monitoring/alertmanager
+- name: Create deployer service account and secret
+  hosts: "{{ groups['masters'] | random }}"
+  become: true
+  roles:
+    - create-user
 
-#- name: Restore Grafana DB
-#  hosts: "{{ groups['masters'] | random }}"
-#  roles:
-#    - monitoring/restore_grafana_db
+- name: Copy kube config to all master nodes
+  hosts: masters
+  become: true
+  roles:
+    - copy-kubeconfig
 
-#- name: Deploy ip location service
-#  hosts: "{{ groups['masters'] | random }}"
-#  roles:
-#    - deploy-ip-location-service
+- name: Install node exporter
+  hosts: all
+  become: true
+  roles:
+    - monitoring/node-exporter
 
-#- name: Cleanup nodes
-#  hosts: master
-#  become: true
-#  roles:
-#    - cleanup
+- name: Deploy monitoring on k3s cluster
+  hosts: "{{ groups['masters'] | random }}"
+  become: true
+  roles:
+    - monitoring/namespace
+    - monitoring/grafana
+    - monitoring/prometheus
+    - monitoring/alertmanager
+
+- name: Restore Grafana DB
+  hosts: "{{ groups['masters'] | random }}"
+  roles:
+    - monitoring/restore_grafana_db
+
+- name: Deploy ip location service
+  hosts: "{{ groups['masters'] | random }}"
+  roles:
+    - deploy-ip-location-service
+
+- name: Cleanup nodes
+  hosts: master
+  become: true
+  roles:
+    - cleanup
 
