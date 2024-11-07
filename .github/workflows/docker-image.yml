@@ -12,4 +12,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: cd ip-location; docker build . --file Dockerfile --tag mhbahmani/ip-location:$(date +%s)
+      run: cd ip-location; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
