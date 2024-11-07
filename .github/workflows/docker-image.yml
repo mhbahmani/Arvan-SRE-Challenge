@@ -9,7 +9,7 @@ on:
     # branches: [ "master" ]
 
 env:
-  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+  DOCKERHUB_USER: ${{ secrets.Production.DOCKERHUB_USER }}
   DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 jobs:
   build:
