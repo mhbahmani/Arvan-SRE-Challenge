@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
         - name: db-init
-          image: postgres:15
+          image: docker.arvancloud.ir/postgres:15
           env:
             - name: POSTGRES_HOST
               value: "{{ postgres_host }}"
