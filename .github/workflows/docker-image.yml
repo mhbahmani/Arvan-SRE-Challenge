@@ -9,7 +9,7 @@ on:
     # branches: [ "master" ]
 
 env:
-  DOCKERHUB_USER: ${{ secrets.Production.DOCKERHUB_USER }}
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
   DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 jobs:
   build:
@@ -17,5 +17,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: echo $DOCKERHUB_USER; 
-      # cd ip-location;docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
+      run: echo $DOCKERHUB_PASS; cd ip-location;docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
