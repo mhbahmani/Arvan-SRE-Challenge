@@ -17,8 +17,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: change directory
-      run: cd ip-location;
-    - name: login
-      run: docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS;
-    - name: build and push the image
-      run: IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
+      working-directory: ip-locations
+    - name: Build and push the image
+      run: |
+        docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
+        IMAGE=mhbahmani/ip-location:$(date +%s)
+        docker build . --file Dockerfile --tag $IMAGE
+        docker push $IMAGE
