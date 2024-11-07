@@ -1,0 +1,25 @@
+---
+- name: Copy files db to node
+  copy:
+    src: ./files/
+    dest: /tmp/postgres-cluster
+
+- name: Create postgres cluster
+  shell: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig \
+    -n postgres apply \
+    -f /tmp/postgres-cluster/configs/ \
+    -f /tmp/postgres-cluster/volumes/ \
+    -f /tmp/postgres-cluster/services/ \
+    -f /tmp/postgres-cluster/nodes/ \
+    -f /tmp/postgres-cluster/pgpool/ 
+
+- name: Wait for postgres cluster
+  shell: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig \
+    -n postgres get po | grep ContainerCreating
+  register: container_creating_pods
+  retries: 5
+  delay: 5
+  until: container_creating_pods.stdout == ""
+  ignore_errors: yes 

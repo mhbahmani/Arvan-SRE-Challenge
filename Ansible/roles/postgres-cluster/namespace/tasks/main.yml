@@ -1,0 +1,8 @@
+---
+- name: Create monitoring namespace
+  environment:
+    K8S_AUTH_KUBECONFIG: /tmp/deployer-kubeconfig
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: postgres

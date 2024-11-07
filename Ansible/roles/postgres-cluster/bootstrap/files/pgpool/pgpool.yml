@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: postgres
+  name: postgres-database-pgpool
+  labels:
+    name: database-balancer
+    node: pgpool
+    system: postgres
+    app: postgres
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      name: database-balancer
+      node: pgpool
+      system: postgres
+      app: postgres
+  template:
+    metadata:
+      name: database-pgpool
+      labels:
+        name: database-balancer
+        node: pgpool
+        system: postgres
+        app: postgres
+    spec:
+      containers:
+      - name: database-pgpool
+        image: docker.arvancloud.ir/postdock/pgpool:latest-pgpool37-postgres11
+        livenessProbe:
+          exec:
+            command: ['bash', '-c', '/usr/local/bin/pgpool/has_write_node.sh && /usr/local/bin/pgpool/has_enough_backends.sh']
+          initialDelaySeconds: 600
+          timeoutSeconds: 10
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "10m"
+
+        ports:
+          - containerPort: 5432
+        env:
+          # pcp
+          - name: "CONFIGS"
+            value: "num_init_children:60,max_pool:4,client_idle_limit:900,connection_life_time:300"
+          - name: "PCP_USER"
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: app.db.pool.pcp.user
+          - name: "PCP_PASSWORD"
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: app.db.pool.pcp.password
+
+          # Cluster configs for heartbeat checks
+          - name: "CHECK_USER"
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: app.db.cluster.replication.user
+          - name: "CHECK_PASSWORD"
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: app.db.cluster.replication.password
+          - name: "DB_USERS"
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: app.db.pool.users
+          - name: "BACKENDS"
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: app.db.pool.backends

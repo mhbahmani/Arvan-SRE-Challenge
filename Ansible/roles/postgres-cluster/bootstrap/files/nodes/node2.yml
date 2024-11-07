@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: postgres
+  name: postgres-db-node2
+  labels:
+    name: database
+    node: node2
+    system: postgres
+    app: postgres
+spec:
+  replicas: 1
+  serviceName: "postgres-db-node2"
+  selector:
+    matchLabels:
+      name: database
+      node: node2
+      system: postgres
+      app: postgres
+  template:
+    metadata:
+      labels:
+        name: database
+        node: node2
+        system: postgres
+        app: postgres
+    spec:
+      containers:
+        - name: postgres-db-node2
+          image: docker.arvancloud.ir/postdock/postgres:latest-postgres11-repmgr40
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "10Mi"
+              cpu: "10m"
+          env:
+            - name: "REPMGR_WAIT_POSTGRES_START_TIMEOUT"
+              value: "600"
+            - name: "REPLICATION_PRIMARY_HOST"
+              value: "postgres-db-node2-service"
+            - name: "NODE_ID"
+              value: "2"
+            - name: "NODE_NAME"
+              value: "node2"
+            - name: "CLUSTER_NODE_NETWORK_NAME"
+              value: "postgres-db-node2-service"
+
+            # Cluster configs
+            - name: "CLUSTER_NAME"
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: app.db.cluster.name
+            - name: "REPLICATION_DB"
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: app.db.cluster.replication.db
+            - name: "REPLICATION_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: app.db.cluster.replication.user
+            - name: "REPLICATION_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: app.db.cluster.replication.password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath:  /var/lib/postgresql/data
+              name: pg-data-volume
+      volumes:
+        - name: pg-data-volume
+          persistentVolumeClaim:
+            claimName: postgres-node2-pvc
