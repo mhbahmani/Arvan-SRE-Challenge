@@ -8,10 +8,13 @@ on:
     branches: [ "*" ]
     # branches: [ "master" ]
 
+env:
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+  DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: cd ip-location;docker login -u ${{ secrets.DOCKERHUB_USER }} -p ${{ secrets.DOCKERHUB_PASS }}; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
+      run: cd ip-location;docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS; IMAGE=mhbahmani/ip-location:$(date +%s); docker build . --file Dockerfile --tag $IMAGE; docker push $IMAGE; 
