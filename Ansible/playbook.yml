@@ -4,12 +4,19 @@
   become: true
   roles:
     - k3s-master
+    - install-required-packages
 
 - name: Deploy k3s on workers
   hosts: workers
   become: true
   roles:
     - k3s-worker
+
+- name: Add node records to /etc/hosts of each node
+  hosts: all
+  become: true
+  roles:
+    - add-etc-hosts
 
 - name: Create deployer service account and secret
   hosts: "{{ groups['masters'] | random }}"
@@ -42,6 +49,12 @@
   hosts: "{{ groups['masters'] | random }}"
   roles:
     - monitoring/restore_grafana_db
+
+- name: Deploy postgres cluster
+  hosts: "{{ groups['masters'] | random }}"
+  roles:
+    - postgres-cluster/namespace
+    - postgres-cluster/bootstrap
 
 - name: Deploy ip location service
   hosts: "{{ groups['masters'] | random }}"
