@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+  DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and push the image
+      working-directory: ip-location
+      run: |
+        docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
+        IMAGE=mhbahmani/ip-location:$(date +%s)
+        docker build . --file Dockerfile --tag $IMAGE
+        docker push $IMAGE
