@@ -6,7 +6,7 @@
     kind: ServiceAccount
     metadata:
       name: deployer
-      namespace: default
+      namespace: kube-system
     ---
     apiVersion: v1
     kind: Secret
@@ -71,7 +71,7 @@
     subjects:
       - kind: ServiceAccount
         name: deployer
-        namespace: default
+        namespace: kube-system
     roleRef:
       kind: ClusterRole
       name: deployer-role
@@ -82,28 +82,29 @@
 
 
 - name: Retrieve CA certificate data
-  command: "kubectl get secret -n kube-system k3s-serving -o jsonpath='{.tls.crt}'"
-  register: ca_cert_data
+  command: "kubectl get secret -n kube-system k3s-serving -o jsonpath='{.data.tls\\.crt}'"
   changed_when: false
+  register: ca_cert_data
 
 - name: Generate kubeconfig file for deployer
   shell: |
     KUBECONFIG_FILE=/tmp/deployer-kubeconfig
-    kubectl config set-cluster default-cluster \
+    sudo rm -rf $KUBECONFIG_FILE
+    kubectl config set-cluster arvan-cluster \
       --server=https://{{ ansible_host }}:6443 \
-      --certificate-authority-data={{ ca_cert_data.stdout }} \
       --kubeconfig=$KUBECONFIG_FILE
+      kubectl config set \
+        clusters.arvan-cluster.certificate-authority-data "{{ ca_cert_data.stdout }}" \
+        --kubeconfig=$KUBECONFIG_FILE
     kubectl config set-credentials deployer \
       --token=$(kubectl get secret deployer -o jsonpath='{.data.token}' | base64 --decode) \
       --kubeconfig=$KUBECONFIG_FILE
-    kubectl config set-context default-context \
-      --cluster=default-cluster \
+    kubectl config set-context arvan \
+      --cluster=arvan-cluster \
       --user=deployer \
-      --namespace=default \
+      --namespace=kube-system \
       --kubeconfig=$KUBECONFIG_FILE
-    kubectl config use-context default-context --kubeconfig=$KUBECONFIG_FILE
-  args:
-    creates: /tmp/deployer-kubeconfig
+    kubectl config use-context arvan --kubeconfig=$KUBECONFIG_FILE
 
 - name: Securely copy kubeconfig to control machine
   fetch:
