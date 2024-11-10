@@ -63,15 +63,17 @@ Prometheus is configured to scrape metrics from:
 * Alertmanager: [alertmanager.arvan.mhbhm.ir](alertmanager.arvan.mhbhm.ir)
 
 ## Step 4: Deploy PostgreSQL Cluster
-A 3-node PostgreSQL cluster is deployed in the `postgres` namespace using [PostDock](https://github.com/paunin/PostDock).
+A 3-node PostgreSQL cluster is deployed in the `postgres` namespace using [zolando](https://github.com/zalando/postgres-operator/blob/master/docs/diagrams/neutral_operator_dark.png#gh-dark-mode-only).
 
 **Verify the PostgreSQL Cluster**
 Run the following commands to check the status of the PostgreSQL nodes:
 
 ```bash
-sudo kubectl -n postgres get pod | grep db-node | awk '{print $1}' | while read pod; do echo "$pod:"; sudo kubectl -n postgres exec $pod -- bash -c 'gosu postgres repmgr cluster show'; done
+k arvan postgres get po -lapplication=spilo --no-headers -o custom-columns=NAME:.metadata.name | xargs -I {} -P 1 kubectl --context arvan -n postgres exec {} -- psql -U postgres -c 'select * from pg_replication_slots;'
 
-sudo kubectl -n postgres get pod | grep pgpool | awk '{print $1}' | while read pod; do echo "$pod:"; sudo kubectl -n postgres exec $pod -- bash -c 'PGCONNECT_TIMEOUT=10 PGPASSWORD=pool_password psql -U replica_user -h 127.0.0.1 template1 -c "show pool_nodes"'; done
+k arvan postgres get po -lapplication=spilo --no-headers -o custom-columns=NAME:.metadata.name | xargs -I {} -P 1 kubectl --context arvan -n postgres exec {} -- psql -U postgres -c 'select * from pg_stat_replication;'
+
+k arvan postgres get po -lapplication=spilo --no-headers -o custom-columns=NAME:.metadata.name | xargs -I {} -P 1 kubectl --context arvan -n postgres exec {} -- psql -U postgres -c 'select * from pg_stat_wal_receiver;'
 ```
 
 ## Step 5: Deploy the IP Location Service
