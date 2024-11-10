@@ -1,0 +1,36 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: ip-locations-postgres
+spec:
+  databases:
+    ip-locations: postgres
+  enableMasterLoadBalancer: true
+  enableReplicaLoadBalancer: true
+  numberOfInstances: 2
+  patroni:
+    pg_hba:
+    - host    postgres        all          0.0.0.0/0                trust
+    - local   all             all                                   trust
+    - hostssl all             +zalandos    127.0.0.1/32       pam
+    - host    all             all                127.0.0.1/32       md5
+    - hostssl all             +zalandos    ::1/128            pam
+    - host    all             all                ::1/128            md5
+    - local   replication     standby                    trust
+    - hostssl replication     standby all                md5
+    - hostnossl all           all                all                reject
+    - hostssl all             +zalandos    all                pam
+    - hostssl all             all                all                md5
+  postgresql:
+    version: "16"
+  preparedDatabases:
+    bar: {}
+  teamId: arvan
+  users:
+    postgres:
+    - superuser
+    zalando:
+    - superuser
+    - createdb
+  volume:
+    size: 500M

@@ -2,24 +2,42 @@
 - name: Copy files db to node
   copy:
     src: ./files/
-    dest: /tmp/postgres-cluster
+    dest: /tmp/postgres-operator
+
+- name: Create postgres operator RBAC
+  shell: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig \
+    -n postgres apply \
+    -f /tmp/postgres-operator/operator-service-account-rbac.yaml
+
+- name: Create postgres operator
+  shell: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig \
+    -n postgres apply \
+    -f /tmp/postgres-operator/configmap.yaml \
+    -f /tmp/postgres-operator/postgres-operator.yaml \
+    -f /tmp/postgres-operator/api-service.yaml \
+
+- name: Wait for postgres operator
+  shell: |
+    kubectl --kubeconfig /tmp/deployer-kubeconfig \
+    -n postgres get po | grep ContainerCreating || true
+  register: container_creating_pods
+  retries: 50
+  delay: 5
+  until: container_creating_pods.stdout == ""
 
 - name: Create postgres cluster
   shell: |
     kubectl --kubeconfig /tmp/deployer-kubeconfig \
     -n postgres apply \
-    -f /tmp/postgres-cluster/configs/ \
-    -f /tmp/postgres-cluster/volumes/ \
-    -f /tmp/postgres-cluster/services/ \
-    -f /tmp/postgres-cluster/nodes/ \
-    -f /tmp/postgres-cluster/pgpool/ 
+    -f /tmp/postgres-operator/minimal-postgres-manifest.yaml
 
 - name: Wait for postgres cluster
   shell: |
     kubectl --kubeconfig /tmp/deployer-kubeconfig \
-    -n postgres get po | grep ContainerCreating
+    -n postgres get po | grep -v postgres-operator | grep ContainerCreating || true
   register: container_creating_pods
-  retries: 5
+  retries: 50
   delay: 5
   until: container_creating_pods.stdout == ""
-  ignore_errors: yes 
