@@ -55,6 +55,7 @@
   roles:
     - postgres-cluster/namespace
     - postgres-cluster/bootstrap
+    - postgres-cluster/ui
 
 - name: Deploy ip location service
   hosts: "{{ groups['masters'] | random }}"
